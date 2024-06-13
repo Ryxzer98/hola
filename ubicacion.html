@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapa de Ubicación desde Formulario</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        padding: 0;
+    }
+    h2 {
+        margin-bottom: 20px;
+    }
+    form {
+        max-width: 400px;
+        background: #f0f0f0;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    label {
+        font-weight: bold;
+    }
+    input[type="text"] {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 10px;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 16px;
+    }
+    button {
+        background-color: #4CAF50;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+    button:hover {
+        background-color: #45a049;
+    }
+    #map {
+        height: 400px;
+        width: 100%;
+        margin-top: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+</style>
+</head>
+<body>
+    <h2>Mapa de Ubicación desde Formulario</h2>
+    <form onsubmit="buscarUbicacion(); return false;">
+        <label for="calle">Calle:</label><br>
+        <input type="text" id="calle" name="calle" required placeholder="Ingresa la calle"><br><br>
+        <label for="numero_exterior">Número Exterior:</label><br>
+        <input type="text" id="numero_exterior" name="numero_exterior" placeholder="Opcional"><br><br>
+        <label for="numero_interior">Número Interior:</label><br>
+        <input type="text" id="numero_interior" name="numero_interior" placeholder="Opcional"><br><br>
+        <label for="ciudad">Ciudad:</label><br>
+        <input type="text" id="ciudad" name="ciudad" required placeholder="Ingresa la ciudad"><br><br>
+        <label for="pais">País:</label><br>
+        <input type="text" id="pais" name="pais" value="Mexico" required readonly><br><br>
+        <button type="submit">Buscar Ubicación</button>
+    </form>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        var map;
+
+        function initMap(lat, lng) {
+            if (map) {
+                map.remove(); // Limpiar el mapa si ya existe
+            }
+
+            map = L.map('map').setView([lat, lng], 16);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+            }).addTo(map);
+
+            L.marker([lat, lng]).addTo(map)
+                .bindPopup('Ubicación encontrada')
+                .openPopup();
+        }
+
+        function buscarUbicacion() {
+            var calle = document.getElementById('calle').value.trim();
+            var numeroExterior = document.getElementById('numero_exterior').value.trim();
+            var numeroInterior = document.getElementById('numero_interior').value.trim();
+            var ciudad = document.getElementById('ciudad').value.trim();
+            var pais = document.getElementById('pais').value.trim();
+
+            // Construir la dirección
+            var direccion = calle;
+            if (numeroExterior) {
+                direccion += ', ' + numeroExterior;
+            }
+            if (numeroInterior) {
+                direccion += ', ' + numeroInterior;
+            }
+            direccion += ', ' + ciudad + ', ' + pais;
+
+            // Utilizar Nominatim para geocodificar la dirección
+            var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(direccion);
+
+            fetch(url)
+                .then(function(response) {
+                    if (!response.ok) {
+                        throw new Error('La solicitud a Nominatim falló');
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.length > 0) {
+                        var lat = data[0].lat;
+                        var lon = data[0].lon;
+                        initMap(lat, lon);
+                    } else {
+                        alert('No se encontró la ubicación. Intente con otra dirección.');
+                    }
+                })
+                .catch(function(error) {
+                    alert('Hubo un error al buscar la ubicación.');
+                    console.error(error);
+                });
+        }
+    </script>
+</body>
+</html>
